@@ -13,13 +13,11 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const DEFAULT_CHICKEN = "https://i.imgur.com/6jLkb9w.png";  // A backup chicken image
-
         const ChickenCam = () => {
             const [isAudioDetected, setIsAudioDetected] = React.useState(false);
             const [audioLevel, setAudioLevel] = React.useState(0);
-            const [customImageUrl, setCustomImageUrl] = React.useState('');
-            const [isCustomImage, setIsCustomImage] = React.useState(false);
+            const [selectedImage, setSelectedImage] = React.useState(null);
+            const fileInputRef = React.useRef(null);
 
             React.useEffect(() => {
                 const setupAudio = async () => {
@@ -47,64 +45,55 @@
                 setupAudio();
             }, []);
 
-            const handleCustomImage = () => {
-                setIsCustomImage(true);
+            const handleImageUpload = (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        setSelectedImage(e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
             };
 
-            const handleDefaultImage = () => {
-                setIsCustomImage(false);
-                setCustomImageUrl('');
+            const triggerFileInput = () => {
+                fileInputRef.current.click();
             };
 
             return (
                 <div className="relative w-full max-w-lg mx-auto p-4">
-                    {/* Big Buttons at Top */}
-                    <div className="mb-4 flex gap-4">
+                    {/* Upload Button */}
+                    <div className="mb-4">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            ref={fileInputRef}
+                            className="hidden"
+                        />
                         <button 
-                            onClick={handleDefaultImage}
-                            className={`flex-1 p-4 rounded-lg ${!isCustomImage ? 'bg-blue-500 text-white' : 'bg-white'}`}
+                            onClick={triggerFileInput}
+                            className="w-full p-4 bg-blue-500 text-white rounded-lg text-lg font-bold hover:bg-blue-600"
                         >
-                            Use Default Chicken
-                        </button>
-                        <button 
-                            onClick={handleCustomImage}
-                            className={`flex-1 p-4 rounded-lg ${isCustomImage ? 'bg-blue-500 text-white' : 'bg-white'}`}
-                        >
-                            Use Custom Chicken
+                            Click to Upload Your Chicken Picture
                         </button>
                     </div>
 
-                    {/* Custom Image Input */}
-                    {isCustomImage && (
-                        <div className="mb-4 bg-white rounded-lg p-4 shadow-lg">
-                            <input 
-                                type="text" 
-                                value={customImageUrl} 
-                                onChange={(e) => setCustomImageUrl(e.target.value)}
-                                className="w-full p-4 text-lg border-2 border-gray-300 rounded"
-                                placeholder="Paste your chicken image URL here"
-                            />
-                            <p className="mt-2 text-sm text-gray-600">
-                                Upload your image to imgur.com and paste the URL here
-                            </p>
-                        </div>
-                    )}
-
                     {/* Chicken Display */}
                     <div className="relative bg-white rounded-lg overflow-hidden shadow-lg" style={{aspectRatio: '1/1'}}>
-                        <img 
-                            src={isCustomImage ? customImageUrl || DEFAULT_CHICKEN : DEFAULT_CHICKEN}
-                            alt="Chicken"
-                            className={`w-full h-full object-contain transition-transform duration-200 ${
-                                isAudioDetected ? 'scale-110' : 'scale-100'
-                            }`}
-                            onError={(e) => {
-                                e.target.src = DEFAULT_CHICKEN;
-                                if (isCustomImage) {
-                                    alert('Could not load that image. Using default chicken instead!');
-                                }
-                            }}
-                        />
+                        {selectedImage ? (
+                            <img 
+                                src={selectedImage}
+                                alt="Your Chicken"
+                                className={`w-full h-full object-contain transition-transform duration-200 ${
+                                    isAudioDetected ? 'scale-110' : 'scale-100'
+                                }`}
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-500 p-4 text-center">
+                                <p>Click the button above to add your chicken picture!</p>
+                            </div>
+                        )}
                         
                         <div className={`absolute bottom-4 right-4 w-4 h-4 rounded-full transition-colors duration-200 ${
                             isAudioDetected ? 'bg-green-500' : 'bg-red-500'
