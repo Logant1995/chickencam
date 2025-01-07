@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Walking Talking Chicken</title>
+    <title>Big Walking Chicken</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
@@ -11,7 +11,7 @@
     <style>
         @keyframes bounce {
             0%, 100% { transform: translateY(0) scale(1); }
-            50% { transform: translateY(-10px) scale(1.1); }
+            50% { transform: translateY(-20px) scale(1.1); }
         }
         @keyframes shake {
             0%, 100% { transform: rotate(0deg); }
@@ -23,20 +23,26 @@
         }
         .walking-chicken {
             position: absolute;
-            transition: all 0.5s ease;
+            transition: all 0.8s ease;
             cursor: pointer;
         }
         .chicken-container {
             position: relative;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path fill="%23eee" d="M0 0h20v20H0z"/></svg>');
+            background: transparent;
             overflow: hidden;
         }
         .flip {
             transform: scaleX(-1);
         }
+        body {
+            background: transparent;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
     </style>
 </head>
-<body class="bg-gray-100">
+<body>
     <div id="root"></div>
 
     <script type="text/babel">
@@ -49,27 +55,25 @@
             const fileInputRef = React.useRef(null);
             const containerRef = React.useRef(null);
 
-            // Walking animation
             React.useEffect(() => {
                 let walkInterval;
                 const startWalking = () => {
                     walkInterval = setInterval(() => {
                         if (containerRef.current) {
                             const container = containerRef.current.getBoundingClientRect();
-                            const targetX = Math.random() * (container.width - 100);
-                            const targetY = Math.random() * (container.height - 100);
+                            const targetX = Math.random() * (container.width - 300); // Adjusted for larger chicken
+                            const targetY = Math.random() * (container.height - 300);
                             
                             setIsFlipped(targetX < position.x);
                             setPosition({ x: targetX, y: targetY });
                         }
-                    }, 3000); // Change direction every 3 seconds
+                    }, 4000); // Slower walking speed
                 };
 
                 startWalking();
                 return () => clearInterval(walkInterval);
             }, [position]);
 
-            // Audio detection
             React.useEffect(() => {
                 const setupAudio = async () => {
                     try {
@@ -110,38 +114,29 @@
             const handleContainerClick = (e) => {
                 if (containerRef.current) {
                     const rect = containerRef.current.getBoundingClientRect();
-                    const x = e.clientX - rect.left - 50; // 50 is half the chicken width
-                    const y = e.clientY - rect.top - 50;  // 50 is half the chicken height
+                    const x = e.clientX - rect.left - 150; // Adjusted for larger chicken
+                    const y = e.clientY - rect.top - 150;
                     setIsFlipped(x < position.x);
                     setPosition({ x, y });
                 }
             };
 
             return (
-                <div className="relative w-full max-w-lg mx-auto p-4">
-                    <div className="mb-4">
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            ref={fileInputRef}
-                            className="hidden"
-                        />
-                        <button 
-                            onClick={() => fileInputRef.current.click()}
-                            className="w-full p-4 bg-blue-500 text-white rounded-lg text-lg font-bold hover:bg-blue-600"
-                        >
-                            Change Chicken Picture
-                        </button>
-                    </div>
-
+                <div className="relative w-screen h-screen">
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        ref={fileInputRef}
+                        className="hidden"
+                    />
+                    
                     <div 
                         ref={containerRef}
-                        className="relative bg-white rounded-lg overflow-hidden shadow-lg chicken-container" 
-                        style={{height: '400px'}}
+                        className="w-full h-full chicken-container"
                         onClick={handleContainerClick}
                     >
-                        {selectedImage ? (
+                        {selectedImage && (
                             <div
                                 className={`walking-chicken ${isFlipped ? 'flip' : ''} ${
                                     isAudioDetected ? 'chicken-bounce' : ''
@@ -149,8 +144,8 @@
                                 style={{
                                     left: `${position.x}px`,
                                     top: `${position.y}px`,
-                                    width: '100px',
-                                    height: '100px'
+                                    width: '300px',  // Much bigger chicken
+                                    height: '300px'  // Much bigger chicken
                                 }}
                             >
                                 <img 
@@ -159,29 +154,14 @@
                                     className="w-full h-full object-contain"
                                 />
                             </div>
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-500 p-4 text-center">
-                                <p>Click the button above to add your chicken picture!</p>
-                            </div>
                         )}
 
-                        <div className={`absolute bottom-4 right-4 w-4 h-4 rounded-full transition-colors duration-200 ${
-                            isAudioDetected ? 'bg-green-500' : 'bg-red-500'
-                        }`} />
-                    </div>
-
-                    <div className="mt-4 bg-white rounded-lg p-4 shadow-lg">
-                        <div className="mb-2">Clucking Level:</div>
-                        <div className="w-full bg-gray-200 rounded-full h-4">
-                            <div 
-                                className="bg-blue-500 rounded-full h-4 transition-all duration-100"
-                                style={{width: `${Math.min(100, audioLevel)}%`}}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="mt-4 bg-white rounded-lg p-4 shadow-lg text-center">
-                        <p>Click anywhere in the white box to make your chicken walk there!</p>
+                        {!selectedImage && (
+                            <div className="absolute top-4 left-4 bg-blue-500 text-white p-4 rounded-lg cursor-pointer"
+                                 onClick={() => fileInputRef.current.click()}>
+                                Click to add your chicken!
+                            </div>
+                        )}
                     </div>
                 </div>
             );
