@@ -2,164 +2,275 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cooper Cam</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <title>Animated Plymouth Rock Chicken</title>
     <style>
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0) scale(1); }
-            50% { transform: translateY(-20px) scale(1.1); }
-        }
-        @keyframes shake {
-            0%, 100% { transform: rotate(0deg); }
-            25% { transform: rotate(-5deg); }
-            75% { transform: rotate(5deg); }
-        }
-        .chicken-bounce {
-            animation: bounce 0.5s infinite, shake 0.25s infinite;
-        }
-        .walking-chicken {
-            position: absolute;
-            transition: all 0.8s ease;
-        }
-        .chicken-container {
-            position: relative;
-            background: transparent;
-            overflow: hidden;
-        }
-        .flip {
-            transform: scaleX(-1);
-        }
         body {
-            background: transparent;
             margin: 0;
-            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: transparent;
             overflow: hidden;
         }
-        .debug-panel {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 12px;
-            z-index: 1000;
-            display: none;
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
         }
-        .debug-panel.show {
-            display: block;
+        #chicken {
+            width: 500px;
+            height: 500px;
+            position: absolute;
+            transition: transform 0.3s ease;
+        }
+        #startButton {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            z-index: 1000;
         }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <button id="startButton">Start Audio</button>
+    <div id="container">
+        <svg id="chicken" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <!-- Natural feather texture -->
+                <pattern id="featherTexture" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <rect width="20" height="20" fill="#E8E8E8"/>
+                    <path d="M0 10 C5 5, 15 5, 20 10 C15 15, 5 15, 0 10" fill="#D0D0D0" opacity="0.5"/>
+                    <path d="M10 0 C15 5, 15 15, 10 20 C5 15, 5 5, 10 0" fill="#D0D0D0" opacity="0.5"/>
+                </pattern>
 
-    <script type="text/babel">
-        const DEFAULT_CHICKEN_URL = 'https://i.imgur.com/bMkEQai.png';
+                <!-- Feather highlight gradient -->
+                <linearGradient id="featherHighlight" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0.2"/>
+                    <stop offset="50%" style="stop-color:#D8D8D8;stop-opacity:0.1"/>
+                    <stop offset="100%" style="stop-color:#A0A0A0;stop-opacity:0.2"/>
+                </linearGradient>
 
-        const ChickenCam = () => {
-            const [isAudioDetected, setIsAudioDetected] = React.useState(false);
-            const [audioLevel, setAudioLevel] = React.useState(0);
-            const [position, setPosition] = React.useState({ x: 50, y: 50 });
-            const [isFlipped, setIsFlipped] = React.useState(false);
-            const [showDebug, setShowDebug] = React.useState(false);
-            const [imageLoaded, setImageLoaded] = React.useState(false);
-            const containerRef = React.useRef(null);
+                <!-- Skin texture for comb and wattle -->
+                <linearGradient id="skinTexture" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#FF0000"/>
+                    <stop offset="50%" style="stop-color:#FF2200"/>
+                    <stop offset="100%" style="stop-color:#FF0000"/>
+                </linearGradient>
+            </defs>
 
-            React.useEffect(() => {
-                const img = new Image();
-                img.onload = () => setImageLoaded(true);
-                img.src = DEFAULT_CHICKEN_URL;
-            }, []);
+            <!-- Neck and body area -->
+            <path d="M300 250 
+                     C400 230, 500 250, 600 300
+                     C650 350, 650 450, 600 500
+                     C500 550, 300 550, 200 500
+                     C150 450, 150 350, 200 300
+                     C250 250, 250 250, 300 250" 
+                  fill="url(#featherTexture)"/>
+            
+            <!-- Layered feather details -->
+            <g id="featherDetails">
+                <path d="M250 350 C300 330, 400 330, 450 350" stroke="#404040" stroke-width="1" fill="none" opacity="0.6"/>
+                <path d="M240 370 C300 350, 400 350, 460 370" stroke="#404040" stroke-width="1" fill="none" opacity="0.6"/>
+                <path d="M230 390 C300 370, 400 370, 470 390" stroke="#404040" stroke-width="1" fill="none" opacity="0.6"/>
+                <path d="M220 410 C300 390, 400 390, 480 410" stroke="#404040" stroke-width="1" fill="none" opacity="0.6"/>
+            </g>
 
-            React.useEffect(() => {
-                let walkInterval;
-                const startWalking = () => {
-                    walkInterval = setInterval(() => {
-                        if (containerRef.current) {
-                            const container = containerRef.current.getBoundingClientRect();
-                            const targetX = Math.random() * (container.width - 300);
-                            const targetY = Math.random() * (container.height - 300);
-                            setIsFlipped(targetX < position.x);
-                            setPosition({ x: targetX, y: targetY });
-                        }
-                    }, 4000);
-                };
-                startWalking();
-                return () => clearInterval(walkInterval);
-            }, [position]);
+            <!-- Head structure -->
+            <g id="head">
+                <!-- Base head shape -->
+                <path d="M260 100
+                         C290 80, 330 80, 360 100
+                         C380 120, 380 160, 360 180
+                         C330 200, 290 200, 260 180
+                         C240 160, 240 120, 260 100" 
+                      fill="url(#featherTexture)"/>
 
-            React.useEffect(() => {
-                const setupAudio = async () => {
-                    try {
-                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                        const source = audioContext.createMediaStreamSource(stream);
-                        const analyser = audioContext.createAnalyser();
-                        analyser.fftSize = 256;
-                        source.connect(analyser);
+                <!-- Realistic eye -->
+                <g id="eye">
+                    <!-- Eye socket shading -->
+                    <path d="M280 135 C290 125, 310 125, 320 135 C310 145, 290 145, 280 135" 
+                          fill="#2A2A2A" opacity="0.3"/>
+                    <!-- White of eye -->
+                    <ellipse cx="300" cy="135" rx="12" ry="14" fill="#FFFFFF"/>
+                    <!-- Iris -->
+                    <ellipse cx="300" cy="135" rx="8" ry="10" fill="#4B3621"/>
+                    <!-- Pupil -->
+                    <ellipse cx="300" cy="135" rx="4" ry="5" fill="#000000"/>
+                    <!-- Eye highlight -->
+                    <circle cx="296" cy="131" r="3" fill="#FFFFFF"/>
+                </g>
 
-                        const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                        const checkAudio = () => {
-                            analyser.getByteFrequencyData(dataArray);
-                            const level = dataArray.reduce((a, b) => a + b) / dataArray.length;
-                            setAudioLevel(level);
-                            setIsAudioDetected(level > 30);
-                            requestAnimationFrame(checkAudio);
-                        };
-                        checkAudio();
-                    } catch (error) {
-                        console.error('Audio setup error:', error);
-                    }
-                };
-                setupAudio();
-            }, []);
+                <!-- Comb detail -->
+                <path d="M300 70
+                         Q315 40, 330 70
+                         Q345 30, 360 70
+                         Q375 40, 390 70" 
+                      fill="url(#skinTexture)" 
+                      stroke="#CC0000" 
+                      stroke-width="1"/>
 
-            return (
-                <div className="relative w-screen h-screen">
-                    <div className={`debug-panel ${showDebug ? 'show' : ''}`}>
-                        <div>Image Loaded: {imageLoaded ? 'Yes' : 'No'}</div>
-                        <div>Audio Level: {audioLevel.toFixed(1)}</div>
-                        <div>Position: {position.x.toFixed(0)}, {position.y.toFixed(0)}</div>
-                    </div>
+                <!-- Wattle -->
+                <path d="M275 180
+                         Q295 210, 315 180" 
+                      fill="url(#skinTexture)" 
+                      stroke="#CC0000" 
+                      stroke-width="1"/>
+
+                <!-- Split beak -->
+                <g id="beak">
+                    <!-- Upper beak -->
+                    <path id="upperBeak" 
+                          d="M260 140 L210 135 L260 140" 
+                          fill="#D2B48C" 
+                          stroke="#8B4513" 
+                          stroke-width="1"/>
                     
-                    <div 
-                        ref={containerRef}
-                        className="w-full h-full chicken-container"
-                        onClick={() => setShowDebug(!showDebug)}
-                    >
-                        <div
-                            className={`walking-chicken ${isFlipped ? 'flip' : ''} ${
-                                isAudioDetected ? 'chicken-bounce' : ''
-                            }`}
-                            style={{
-                                left: `${position.x}px`,
-                                top: `${position.y}px`,
-                                width: '300px',
-                                height: '300px'
-                            }}
-                        >
-                            <img 
-                                src={DEFAULT_CHICKEN_URL}
-                                alt="Cooper the Chicken"
-                                className="w-full h-full object-contain"
-                                onLoad={() => setImageLoaded(true)}
-                                onError={(e) => {
-                                    console.error('Image failed to load');
-                                    setImageLoaded(false);
-                                }}
-                            />
-                        </div>
-                    </div>
-                </div>
-            );
-        };
+                    <!-- Lower beak -->
+                    <path id="lowerBeak" 
+                          d="M260 140 L210 145 L260 140" 
+                          fill="#C1A27C" 
+                          stroke="#8B4513" 
+                          stroke-width="1"/>
+                </g>
+            </g>
 
-        ReactDOM.render(<ChickenCam />, document.getElementById('root'));
+            <!-- Legs -->
+            <g id="legs">
+                <!-- Left leg -->
+                <path d="M350 500 L350 600" 
+                      stroke="#E8C098" 
+                      stroke-width="8" 
+                      stroke-linecap="round"/>
+                <!-- Left foot -->
+                <path d="M350 600 L340 610 M350 600 L350 610 M350 600 L360 610" 
+                      stroke="#E8C098" 
+                      stroke-width="6" 
+                      stroke-linecap="round"/>
+
+                <!-- Right leg -->
+                <path d="M450 500 L450 600" 
+                      stroke="#E8C098" 
+                      stroke-width="8" 
+                      stroke-linecap="round"/>
+                <!-- Right foot -->
+                <path d="M450 600 L440 610 M450 600 L450 610 M450 600 L460 610" 
+                      stroke="#E8C098" 
+                      stroke-width="6" 
+                      stroke-linecap="round"/>
+            </g>
+
+            <!-- Tail feathers -->
+            <g id="tail">
+                <path d="M600 350 Q650 300, 620 400" 
+                      fill="url(#featherTexture)"/>
+                <path d="M610 340 Q660 290, 630 390" 
+                      fill="url(#featherTexture)"/>
+                <path d="M620 330 Q670 280, 640 380" 
+                      fill="url(#featherTexture)"/>
+            </g>
+        </svg>
+    </div>
+
+    <script>
+        let audioContext;
+        let analyser;
+        let dataArray;
+        const chicken = document.getElementById('chicken');
+        const container = document.getElementById('container');
+        const upperBeak = document.getElementById('upperBeak');
+        const lowerBeak = document.getElementById('lowerBeak');
+        let isAudioInitialized = false;
+        let chickenX = window.innerWidth / 2;
+        let chickenY = window.innerHeight / 2;
+        let targetX = chickenX;
+        let targetY = chickenY;
+
+        // Center chicken initially
+        chicken.style.left = `${chickenX}px`;
+        chicken.style.top = `${chickenY}px`;
+
+        document.getElementById('startButton').addEventListener('click', initAudio);
+
+        function initAudio() {
+            if (isAudioInitialized) return;
+            
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 1024;
+            
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    const source = audioContext.createMediaStreamSource(stream);
+                    source.connect(analyser);
+                    dataArray = new Uint8Array(analyser.frequencyBinCount);
+                    isAudioInitialized = true;
+                    animate();
+                    setInterval(updateTarget, 2000);
+                })
+                .catch(err => console.error('Error accessing microphone:', err));
+        }
+
+        function updateTarget() {
+            targetX = Math.random() * (container.clientWidth - chicken.clientWidth);
+            targetY = Math.random() * (container.clientHeight - chicken.clientHeight);
+        }
+
+        function moveTowardsTarget(speed) {
+            const dx = targetX - chickenX;
+            const dy = targetY - chickenY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 1) {
+                chickenX += (dx / distance) * speed;
+                chickenY += (dy / distance) * speed;
+                
+                chicken.style.left = `${chickenX}px`;
+                chicken.style.top = `${chickenY}px`;
+                
+                if (dx < 0) {
+                    chicken.style.transform = 'scaleX(-1)';
+                } else {
+                    chicken.style.transform = 'scaleX(1)';
+                }
+            }
+        }
+
+        function animate() {
+            if (!isAudioInitialized) return;
+            
+            analyser.getByteFrequencyData(dataArray);
+            
+            const volume = dataArray.reduce((a, b) => a + b) / dataArray.length;
+            
+            // Beak animation
+            const beakOpen = Math.min(volume / 30, 15);
+            upperBeak.setAttribute('d', `M260 140 L210 ${135 - beakOpen} L260 140`);
+            lowerBeak.setAttribute('d', `M260 140 L210 ${145 + beakOpen} L260 140`);
+            
+            // Movement speed based on volume
+            const baseSpeed = 2;
+            const speedMultiplier = 1 + (volume / 128);
+            const currentSpeed = baseSpeed * speedMultiplier;
+            
+            moveTowardsTarget(currentSpeed);
+            
+            requestAnimationFrame(animate);
+        }
+
+        updateTarget();
+
+        window.addEventListener('resize', () => {
+            targetX = Math.min(targetX, container.clientWidth - chicken.clientWidth);
+            targetY = Math.min(targetY, container.clientHeight - chicken.clientHeight);
+        });
     </script>
 </body>
 </html>
