@@ -178,7 +178,7 @@
             </g>
         </svg>
     </div>
-    <script>
+   <script>
         let audioContext;
         let analyser;
         let dataArray;
@@ -186,18 +186,28 @@
         const container = document.getElementById('container');
         const upperBeak = document.getElementById('upperBeak');
         const lowerBeak = document.getElementById('lowerBeak');
+        const head = document.getElementById('head');
         let isAudioInitialized = false;
-
+        let currentBehavior = 'idle';
+        let behaviorTime = 0;
+        
         // Center chicken initially
         chicken.style.left = `${window.innerWidth/2 - 250}px`;
         chicken.style.top = `${window.innerHeight/2 - 250}px`;
 
+        // Behaviors and their durations
+        const behaviors = {
+            idle: { duration: 2000, next: ['lookLeft', 'lookRight', 'walkLeft', 'walkRight', 'peck'] },
+            lookLeft: { duration: 1500, next: ['idle', 'walkLeft', 'peck'] },
+            lookRight: { duration: 1500, next: ['idle', 'walkRight', 'peck'] },
+            walkLeft: { duration: 3000, next: ['idle', 'lookLeft', 'peck'] },
+            walkRight: { duration: 3000, next: ['idle', 'lookRight', 'peck'] },
+            peck: { duration: 1000, next: ['idle', 'walkLeft', 'walkRight'] }
+        };
+
         document.getElementById('startButton').addEventListener('click', async () => {
             try {
-                // First request microphone permission
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                
-                // Then initialize audio context
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
                 analyser.fftSize = 1024;
@@ -207,11 +217,8 @@
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
                 isAudioInitialized = true;
                 
-                // Start animation
                 animate();
-                
-                // Occasional subtle movement
-                setInterval(subtleMove, 5000); // Every 5 seconds
+                updateBehavior();
                 
             } catch (err) {
                 console.error('Error accessing microphone:', err);
@@ -219,38 +226,83 @@
             }
         });
 
-        function subtleMove() {
-            // Only small random movements
-            const smallMove = 20; // pixels
+        function updateBehavior() {
+            const possibleNext = behaviors[currentBehavior].next;
+            currentBehavior = possibleNext[Math.floor(Math.random() * possibleNext.length)];
+            behaviorTime = 0;
+            
+            setTimeout(updateBehavior, behaviors[currentBehavior].duration);
+        }
+
+        function performBehavior(volume) {
+            behaviorTime += 16.67; // Approximate time between frames
+            const progress = behaviorTime / behaviors[currentBehavior].duration;
+            
             const currentLeft = parseInt(chicken.style.left);
             const currentTop = parseInt(chicken.style.top);
-            
-            const newX = currentLeft + (Math.random() * smallMove - smallMove/2);
-            const newY = currentTop + (Math.random() * smallMove - smallMove/2);
-            
-            // Ensure chicken stays within bounds
-            chicken.style.left = `${Math.max(0, Math.min(window.innerWidth - 500, newX))}px`;
-            chicken.style.top = `${Math.max(0, Math.min(window.innerHeight - 500, newY))}px`;
+            let headRotation = 0;
+            let headY = 0;
+
+            switch(currentBehavior) {
+                case 'lookLeft':
+                    headRotation = -20 * Math.sin(Math.PI * progress);
+                    break;
+                    
+                case 'lookRight':
+                    headRotation = 20 * Math.sin(Math.PI * progress);
+                    break;
+                    
+                case 'walkLeft':
+                    chicken.style.transform = 'scaleX(-1)';
+                    const newLeftPos = currentLeft - 1;
+                    if (newLeftPos > 0) {
+                        chicken.style.left = `${newLeftPos}px`;
+                    }
+                    headRotation = 5 * Math.sin(progress * Math.PI * 4);
+                    break;
+                    
+                case 'walkRight':
+                    chicken.style.transform = 'scaleX(1)';
+                    const newRightPos = currentLeft + 1;
+                    if (newRightPos < window.innerWidth - 500) {
+                        chicken.style.left = `${newRightPos}px`;
+                    }
+                    headRotation = 5 * Math.sin(progress * Math.PI * 4);
+                    break;
+                    
+                case 'peck':
+                    headRotation = 30 * Math.sin(Math.PI * progress);
+                    headY = 20 * Math.sin(Math.PI * progress);
+                    // Beak movement during pecking
+                    if (progress > 0.4 && progress < 0.6) {
+                        upperBeak.setAttribute('d', `M260 140 L210 ${130} L260 140`);
+                        lowerBeak.setAttribute('d', `M260 140 L210 ${150} L260 140`);
+                    } else {
+                        upperBeak.setAttribute('d', 'M260 140 L210 135 L260 140');
+                        lowerBeak.setAttribute('d', 'M260 140 L210 145 L260 140');
+                    }
+                    break;
+            }
+
+            // Apply head movements
+            head.style.transform = `rotate(${headRotation}deg) translateY(${headY}px)`;
         }
 
         function animate() {
             if (!isAudioInitialized) return;
             
             analyser.getByteFrequencyData(dataArray);
-            
-            // Calculate volume focusing on speech frequencies
             const volume = dataArray.slice(10, 50).reduce((a, b) => a + b) / 40;
             
-            // Beak animation only happens with significant sound
-            if (volume > 30) {
+            // Handle audio-based beak movement
+            if (volume > 30 && currentBehavior !== 'peck') {
                 const beakOpen = Math.min(volume / 40, 10);
                 upperBeak.setAttribute('d', `M260 140 L210 ${135 - beakOpen} L260 140`);
                 lowerBeak.setAttribute('d', `M260 140 L210 ${145 + beakOpen} L260 140`);
-            } else {
-                // Close beak when quiet
-                upperBeak.setAttribute('d', 'M260 140 L210 135 L260 140');
-                lowerBeak.setAttribute('d', 'M260 140 L210 145 L260 140');
             }
+            
+            // Perform current behavior
+            performBehavior(volume);
             
             requestAnimationFrame(animate);
         }
